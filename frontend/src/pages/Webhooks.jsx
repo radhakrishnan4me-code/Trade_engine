@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, Copy, X } from 'lucide-react';
+import { Plus, Trash2, Copy, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 const EXIT_STRATEGIES = ['TARGET1_EXIT', 'TARGET1_TRAIL', 'FULL_TARGET_RUN', 'SL_ONLY'];
 
@@ -9,9 +9,12 @@ export default function Webhooks() {
     const [webhooks, setWebhooks] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [showDefaults, setShowDefaults] = useState(false);
     const [form, setForm] = useState({
         name: '', strategy_name: '', account_ids: [], default_quantity: 1,
-        product_type: 'MIS', exchange: 'NSE', default_exit_strategy: 'FULL_TARGET_RUN'
+        product_type: 'MIS', exchange: 'NSE', default_exit_strategy: 'FULL_TARGET_RUN',
+        default_symbol: '', default_action: '', default_entry: '', default_sl: '',
+        default_t1: '', default_t2: '', default_t3: ''
     });
 
     useEffect(() => { fetchData(); }, []);
@@ -27,10 +30,27 @@ export default function Webhooks() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/webhooks', form);
+            // Clean form — convert empty strings to null for optional fields
+            const payload = {
+                ...form,
+                default_symbol: form.default_symbol || null,
+                default_action: form.default_action || null,
+                default_entry: form.default_entry !== '' ? parseFloat(form.default_entry) : null,
+                default_sl: form.default_sl !== '' ? parseFloat(form.default_sl) : null,
+                default_t1: form.default_t1 !== '' ? parseFloat(form.default_t1) : null,
+                default_t2: form.default_t2 !== '' ? parseFloat(form.default_t2) : null,
+                default_t3: form.default_t3 !== '' ? parseFloat(form.default_t3) : null,
+            };
+            await api.post('/webhooks', payload);
             toast.success('Webhook created');
             setShowModal(false);
-            setForm({ name: '', strategy_name: '', account_ids: [], default_quantity: 1, product_type: 'MIS', exchange: 'NSE', default_exit_strategy: 'FULL_TARGET_RUN' });
+            setShowDefaults(false);
+            setForm({
+                name: '', strategy_name: '', account_ids: [], default_quantity: 1,
+                product_type: 'MIS', exchange: 'NSE', default_exit_strategy: 'FULL_TARGET_RUN',
+                default_symbol: '', default_action: '', default_entry: '', default_sl: '',
+                default_t1: '', default_t2: '', default_t3: ''
+            });
             fetchData();
         } catch (e) { toast.error('Failed to create'); }
     };
@@ -99,6 +119,18 @@ export default function Webhooks() {
                             <span>Exit: <span className="text-amber-400">{strategyLabel(w.default_exit_strategy)}</span></span>
                             <span>Accounts: <span className="text-dark-200">{(w.account_ids || []).length}</span></span>
                         </div>
+                        {/* Show default trade params if configured */}
+                        {(w.default_symbol || w.default_action || w.default_entry || w.default_sl) && (
+                            <div className="mt-2 flex flex-wrap gap-3 text-xs text-dark-500">
+                                {w.default_symbol && <span>Symbol: <span className="text-cyan-400">{w.default_symbol}</span></span>}
+                                {w.default_action && <span>Action: <span className="text-cyan-400">{w.default_action}</span></span>}
+                                {w.default_entry != null && <span>Entry: <span className="text-cyan-400">{w.default_entry}</span></span>}
+                                {w.default_sl != null && <span>SL: <span className="text-cyan-400">{w.default_sl}</span></span>}
+                                {w.default_t1 != null && <span>T1: <span className="text-cyan-400">{w.default_t1}</span></span>}
+                                {w.default_t2 != null && <span>T2: <span className="text-cyan-400">{w.default_t2}</span></span>}
+                                {w.default_t3 != null && <span>T3: <span className="text-cyan-400">{w.default_t3}</span></span>}
+                            </div>
+                        )}
                         <div className="mt-2">
                             <code className="text-xs text-dark-500 bg-dark-800/50 px-2 py-1 rounded block font-mono">
                                 POST {window.location.origin}/webhook/{w.webhook_token}
@@ -164,6 +196,71 @@ export default function Webhooks() {
                                     {EXIT_STRATEGIES.map(s => <option key={s} value={s}>{strategyLabel(s)}</option>)}
                                 </select>
                             </div>
+
+                            {/* Collapsible Default Trade Parameters */}
+                            <div className="border border-dark-700 rounded-lg overflow-hidden">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDefaults(!showDefaults)}
+                                    className="w-full flex items-center justify-between px-4 py-3 bg-dark-800/50 text-sm text-dark-300 hover:bg-dark-700/50 transition-smooth"
+                                >
+                                    <span>Default Trade Parameters <span className="text-dark-500">(optional — override in signal)</span></span>
+                                    {showDefaults ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </button>
+                                {showDefaults && (
+                                    <div className="p-4 space-y-3 border-t border-dark-700">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs text-dark-400 mb-1">Default Symbol</label>
+                                                <input value={form.default_symbol} onChange={e => setForm({ ...form, default_symbol: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-dark-100 text-sm focus:outline-none focus:border-brand-500" placeholder="e.g. NIFTY" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-dark-400 mb-1">Default Action</label>
+                                                <select value={form.default_action} onChange={e => setForm({ ...form, default_action: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-dark-100 text-sm focus:outline-none focus:border-brand-500">
+                                                    <option value="">Not set</option>
+                                                    <option value="BUY">BUY</option>
+                                                    <option value="SELL">SELL</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs text-dark-400 mb-1">Default Entry Price</label>
+                                                <input type="number" step="0.01" value={form.default_entry} onChange={e => setForm({ ...form, default_entry: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-dark-100 text-sm focus:outline-none focus:border-brand-500" placeholder="e.g. 22500" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-dark-400 mb-1">Default Stop Loss</label>
+                                                <input type="number" step="0.01" value={form.default_sl} onChange={e => setForm({ ...form, default_sl: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-dark-100 text-sm focus:outline-none focus:border-brand-500" placeholder="e.g. 22400" />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div>
+                                                <label className="block text-xs text-dark-400 mb-1">Target 1</label>
+                                                <input type="number" step="0.01" value={form.default_t1} onChange={e => setForm({ ...form, default_t1: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-dark-100 text-sm focus:outline-none focus:border-brand-500" placeholder="T1" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-dark-400 mb-1">Target 2</label>
+                                                <input type="number" step="0.01" value={form.default_t2} onChange={e => setForm({ ...form, default_t2: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-dark-100 text-sm focus:outline-none focus:border-brand-500" placeholder="T2" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-dark-400 mb-1">Target 3</label>
+                                                <input type="number" step="0.01" value={form.default_t3} onChange={e => setForm({ ...form, default_t3: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-dark-100 text-sm focus:outline-none focus:border-brand-500" placeholder="T3" />
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-dark-500 mt-1">
+                                            These values are used when the incoming signal doesn't include them. Signal values always take priority.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
                             <div>
                                 <label className="block text-sm text-dark-300 mb-2">Target Accounts</label>
                                 <div className="space-y-2">

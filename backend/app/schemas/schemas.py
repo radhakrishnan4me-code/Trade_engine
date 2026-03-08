@@ -88,6 +88,14 @@ class WebhookCreate(BaseModel):
     product_type: str = "MIS"
     exchange: str = "NSE"
     default_exit_strategy: ExitStrategy = ExitStrategy.FULL_TARGET_RUN
+    # Optional default trade parameters
+    default_symbol: Optional[str] = None
+    default_action: Optional[str] = None
+    default_entry: Optional[float] = None
+    default_sl: Optional[float] = None
+    default_t1: Optional[float] = None
+    default_t2: Optional[float] = None
+    default_t3: Optional[float] = None
 
 
 class WebhookUpdate(BaseModel):
@@ -98,6 +106,13 @@ class WebhookUpdate(BaseModel):
     product_type: Optional[str] = None
     exchange: Optional[str] = None
     default_exit_strategy: Optional[ExitStrategy] = None
+    default_symbol: Optional[str] = None
+    default_action: Optional[str] = None
+    default_entry: Optional[float] = None
+    default_sl: Optional[float] = None
+    default_t1: Optional[float] = None
+    default_t2: Optional[float] = None
+    default_t3: Optional[float] = None
 
 
 class WebhookResponse(BaseModel):
@@ -110,6 +125,13 @@ class WebhookResponse(BaseModel):
     product_type: str
     exchange: str
     default_exit_strategy: str
+    default_symbol: Optional[str] = None
+    default_action: Optional[str] = None
+    default_entry: Optional[float] = None
+    default_sl: Optional[float] = None
+    default_t1: Optional[float] = None
+    default_t2: Optional[float] = None
+    default_t3: Optional[float] = None
     created_at: Optional[datetime] = None
 
     class Config:
@@ -118,14 +140,15 @@ class WebhookResponse(BaseModel):
 
 # ---- Signal ----
 class SignalPayload(BaseModel):
-    symbol: str
-    exchange: str = "NSE"
-    action: str  # BUY or SELL
-    entry: float
+    """All fields optional — falls back to webhook defaults if not provided."""
+    symbol: Optional[str] = None
+    exchange: Optional[str] = None
+    action: Optional[str] = None  # BUY or SELL
+    entry: Optional[float] = None
     t1: Optional[float] = None
     t2: Optional[float] = None
     t3: Optional[float] = None
-    sl: float
+    sl: Optional[float] = None
     quantity: Optional[int] = None
 
 

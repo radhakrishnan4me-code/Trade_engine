@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, Zap, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Zap, Radio, X } from 'lucide-react';
 
 export default function Accounts() {
     const [accounts, setAccounts] = useState([]);
@@ -44,13 +44,21 @@ export default function Accounts() {
         } catch (e) { toast.error('Failed to delete'); }
     };
 
-    const handleTest = async (id) => {
+    const handleTestApi = async (id) => {
         try {
             const res = await api.post(`/accounts/${id}/test`);
-            if (res.data.success) toast.success('Connection successful!');
-            else toast.error(`Connection failed: ${res.data.error}`);
+            if (res.data.success) toast.success('API connection successful!');
+            else toast.error(`API test failed: ${res.data.error}`);
             fetchAccounts();
-        } catch (e) { toast.error('Test failed'); }
+        } catch (e) { toast.error('API test failed'); }
+    };
+
+    const handleTestWs = async (id) => {
+        try {
+            const res = await api.post(`/accounts/${id}/test-ws`);
+            if (res.data.success) toast.success(res.data.message || 'WebSocket connected!');
+            else toast.error(`WS test failed: ${res.data.error}`);
+        } catch (e) { toast.error('WebSocket test failed'); }
     };
 
     const openEdit = (a) => {
@@ -102,8 +110,11 @@ export default function Accounts() {
                                 </td>
                                 <td className="py-3 px-4 text-right">
                                     <div className="flex items-center justify-end gap-1">
-                                        <button onClick={() => handleTest(a.id)} className="p-1.5 text-amber-400 hover:bg-dark-700 rounded transition-smooth" title="Test Connection">
+                                        <button onClick={() => handleTestApi(a.id)} className="p-1.5 text-amber-400 hover:bg-dark-700 rounded transition-smooth" title="Test API">
                                             <Zap size={15} />
+                                        </button>
+                                        <button onClick={() => handleTestWs(a.id)} className="p-1.5 text-cyan-400 hover:bg-dark-700 rounded transition-smooth" title="Test WebSocket">
+                                            <Radio size={15} />
                                         </button>
                                         <button onClick={() => openEdit(a)} className="p-1.5 text-blue-400 hover:bg-dark-700 rounded transition-smooth" title="Edit">
                                             <Pencil size={15} />

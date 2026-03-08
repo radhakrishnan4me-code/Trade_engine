@@ -90,3 +90,22 @@ async def test_account(
         account.status = "error"
         await db.commit()
     return result
+
+
+@router.post("/{account_id}/test-ws")
+async def test_ws_connection(
+    account_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Test WebSocket connection to the OpenAlgo instance."""
+    account = await db.get(Account, account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    if not account.ws_url:
+        return {"success": False, "error": "No WebSocket URL configured for this account"}
+
+    result = await openalgo_manager.test_ws_connection(account.ws_url, account.api_key)
+    return result
+

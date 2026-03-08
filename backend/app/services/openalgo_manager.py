@@ -111,7 +111,28 @@ class OpenAlgoManager:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    async def test_ws_connection(self, ws_url: str, api_key: str) -> dict:
+        """Test WebSocket connection to an OpenAlgo instance."""
+        import websockets
+        import json
+
+        try:
+            # Attempt a quick WebSocket connection
+            async with websockets.connect(ws_url, close_timeout=5, open_timeout=5) as ws:
+                # Send a ping-style message
+                await ws.send(json.dumps({"action": "ping"}))
+                # Try to receive a response with timeout
+                try:
+                    response = await asyncio.wait_for(ws.recv(), timeout=3)
+                    return {"success": True, "message": "WebSocket connected successfully", "response": str(response)[:200]}
+                except asyncio.TimeoutError:
+                    # No response is OK — some WS servers don't respond to ping
+                    return {"success": True, "message": "WebSocket connected (no ping response, but connection OK)"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     def disconnect_all(self):
+
         """Disconnect all clients."""
         for account_id in list(self._clients.keys()):
             self.remove_client(account_id)
