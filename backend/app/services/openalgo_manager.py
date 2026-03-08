@@ -112,24 +112,33 @@ class OpenAlgoManager:
             return {"success": False, "error": str(e)}
 
     async def test_ws_connection(self, ws_url: str, api_key: str) -> dict:
-        """Test WebSocket connection to an OpenAlgo instance."""
-        import websockets
-        import json
-
+        """Test WebSocket connection to an OpenAlgo instance using OpenAlgo auth flow."""
+        client = None
         try:
-            # Attempt a quick WebSocket connection
-            async with websockets.connect(ws_url, close_timeout=5, open_timeout=5) as ws:
-                # Send a ping-style message
-                await ws.send(json.dumps({"action": "ping"}))
-                # Try to receive a response with timeout
-                try:
-                    response = await asyncio.wait_for(ws.recv(), timeout=3)
-                    return {"success": True, "message": "WebSocket connected successfully", "response": str(response)[:200]}
-                except asyncio.TimeoutError:
-                    # No response is OK — some WS servers don't respond to ping
-                    return {"success": True, "message": "WebSocket connected (no ping response, but connection OK)"}
+            client = api(api_key=api_key, ws_url=ws_url)
+
+            # OpenAlgo connect() is blocking (threaded websocket internals),
+            # so execute it off the event loop.
+            authenticated = await asyncio.to_thread(client.connect)
+            if not authenticated:
+                return {
+                    "success": False,
+                    "error": "Connected to WebSocket but OpenAlgo authentication failed. Verify API key and ws_url.",
+                }
+
+            return {
+                "success": True,
+                "message": "WebSocket connected and authenticated successfully",
+            }
         except Exception as e:
+            logger.error(f"WebSocket test failed: {e}")
             return {"success": False, "error": str(e)}
+        finally:
+            if client:
+                try:
+                    await asyncio.to_thread(client.disconnect)
+                except Exception as disconnect_error:
+                    logger.warning(f"WebSocket test disconnect failed: {disconnect_error}")
 
     def disconnect_all(self):
 
