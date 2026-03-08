@@ -7,8 +7,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-trade_engine}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
@@ -24,8 +22,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "8000:8000"
     volumes:
       - ./backend:/app
     restart: unless-stopped
@@ -36,8 +32,6 @@ services:
       dockerfile: ../Dockerfile.frontend
     depends_on:
       - backend
-    ports:
-      - "3000:80"
     restart: unless-stopped
 
   nginx:
