@@ -21,5 +21,14 @@ async def get_db():
 
 
 async def init_db():
+    # Import all models so SQLAlchemy registers them with Base.metadata
+    from app.models.user import User        # noqa: F401
+    from app.models.account import Account  # noqa: F401
+    from app.models.webhook import Webhook  # noqa: F401
+    from app.models.signal import Signal    # noqa: F401
+    from app.models.trade import Trade      # noqa: F401
+    from app.models.log import Log          # noqa: F401
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
